@@ -6,7 +6,8 @@ import { Input } from './ui/Input';
 import { Textarea } from './ui/Textarea';
 import { Select } from './ui/Select';
 import { getCurrentDate } from '../services/utils';
-import { getAllTransporters, getLastTHNForTransporter } from '../services/truckHiringNoteService';
+import { getLastTHNForTransporter } from '../services/truckHiringNoteService';
+import { getAllTransporters } from '../services/transporterService';
 
 interface TruckHiringNoteFormProps {
     existingNote?: TruckHiringNote;
@@ -170,7 +171,7 @@ export const TruckHiringNoteForm: React.FC<TruckHiringNoteFormProps> = ({ existi
                         {/* Basic Information */}
                         <div className="mb-6">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <Input 
                                     label="Date" 
                                     name="date" 
@@ -375,10 +376,10 @@ export const TruckHiringNoteForm: React.FC<TruckHiringNoteFormProps> = ({ existi
                                         onChange={handleChange} 
                                         error={fieldErrors.advancePaid}
                                     />
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700">Balance Payable (₹)</label>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Balance Payable (₹)</label>
                                         <div className="mt-1 p-2 border border-gray-300 rounded-md bg-gray-50 font-semibold text-red-600">
-                                            {balancePayable.toLocaleString('en-IN')}
+                                    {balancePayable.toLocaleString('en-IN')}
                                         </div>
                                     </div>
                                 </div>
