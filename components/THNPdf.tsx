@@ -34,18 +34,12 @@ export const THNView: React.FC<{truckHiringNote: TruckHiringNote, companyInfo: C
                 <table className="w-full border-collapse border border-gray-400 mb-4">
                     <tbody>
                         <tr>
-                            <td className="font-bold border p-2 w-1/4">Truck Owner Name</td>
+                            <td className="font-bold border p-2 w-1/4">Transporter Name</td>
                             <td className="border p-2 w-3/4" colSpan={3}>{thn.truckOwnerName}</td>
                         </tr>
                         <tr>
                             <td className="font-bold border p-2">Truck Number</td>
                             <td className="border p-2">{thn.truckNumber}</td>
-                            <td className="font-bold border p-2">Driver Name</td>
-                            <td className="border p-2">{thn.driverName}</td>
-                        </tr>
-                        <tr>
-                            <td className="font-bold border p-2">Driver License</td>
-                            <td className="border p-2">{thn.driverLicense}</td>
                             <td className="font-bold border p-2">Expected Delivery</td>
                             <td className="border p-2">{formatDate(thn.expectedDeliveryDate)}</td>
                         </tr>

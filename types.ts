@@ -163,10 +163,8 @@ export interface TruckHiringNote {
   _id: string;
   thnNumber: number;
   date: string;
-  truckOwnerName: string;
+  truckOwnerName: string; // transporter name
   truckNumber: string;
-  driverName: string;
-  driverLicense: string;
   origin: string;
   destination: string;
   goodsType: string;

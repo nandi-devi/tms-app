@@ -4,10 +4,8 @@ import { THNStatus } from '../types';
 export interface ITruckHiringNote extends Document {
   thnNumber: number;
   date: string;
-  truckOwnerName: string;
+  truckOwnerName: string; // transporter name
   truckNumber: string;
-  driverName: string;
-  driverLicense: string;
   origin: string;
   destination: string;
   goodsType: string;
@@ -27,8 +25,6 @@ const TruckHiringNoteSchema = new Schema({
   date: { type: String, required: true },
   truckOwnerName: { type: String, required: true },
   truckNumber: { type: String, required: true },
-  driverName: { type: String, required: true },
-  driverLicense: { type: String, required: true },
   origin: { type: String, required: true },
   destination: { type: String, required: true },
   goodsType: { type: String, required: true },

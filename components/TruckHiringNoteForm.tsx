@@ -17,8 +17,6 @@ export const TruckHiringNoteForm: React.FC<TruckHiringNoteFormProps> = ({ existi
         date: getCurrentDate(),
         truckOwnerName: '',
         truckNumber: '',
-        driverName: '',
-        driverLicense: '',
         origin: '',
         destination: '',
         goodsType: '',
@@ -67,10 +65,8 @@ export const TruckHiringNoteForm: React.FC<TruckHiringNoteFormProps> = ({ existi
                     <Card title={existingNote ? `Edit Truck Hiring Note #${existingNote.thnNumber}` : 'Create New Truck Hiring Note'}>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <Input label="Date" name="date" type="date" value={note.date || ''} onChange={handleChange} required />
-                            <Input label="Truck Owner Name" name="truckOwnerName" value={note.truckOwnerName || ''} onChange={handleChange} required />
+                            <Input label="Transporter Name" name="truckOwnerName" value={note.truckOwnerName || ''} onChange={handleChange} required />
                             <Input label="Truck Number" name="truckNumber" value={note.truckNumber || ''} onChange={handleChange} required />
-                            <Input label="Driver Name" name="driverName" value={note.driverName || ''} onChange={handleChange} required />
-                            <Input label="Driver License" name="driverLicense" value={note.driverLicense || ''} onChange={handleChange} required />
                             <Input label="Expected Delivery Date" name="expectedDeliveryDate" type="date" value={note.expectedDeliveryDate || ''} onChange={handleChange} required />
                         </div>
 
