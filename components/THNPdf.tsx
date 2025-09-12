@@ -43,6 +43,22 @@ export const THNView: React.FC<{truckHiringNote: TruckHiringNote, companyInfo: C
                             <td className="font-bold border p-2">Expected Delivery</td>
                             <td className="border p-2">{formatDate(thn.expectedDeliveryDate)}</td>
                         </tr>
+                        {(thn.transporterPhone || thn.transporterAddress) && (
+                            <tr>
+                                <td className="font-bold border p-2">Phone</td>
+                                <td className="border p-2">{thn.transporterPhone || 'N/A'}</td>
+                                <td className="font-bold border p-2">Address</td>
+                                <td className="border p-2">{thn.transporterAddress || 'N/A'}</td>
+                            </tr>
+                        )}
+                        {(thn.transporterGstin || thn.transporterPan) && (
+                            <tr>
+                                <td className="font-bold border p-2">GSTIN</td>
+                                <td className="border p-2">{thn.transporterGstin || 'N/A'}</td>
+                                <td className="font-bold border p-2">PAN</td>
+                                <td className="border p-2">{thn.transporterPan || 'N/A'}</td>
+                            </tr>
+                        )}
                         <tr>
                             <td className="font-bold border p-2">Origin</td>
                             <td className="border p-2">{thn.origin}</td>
@@ -68,8 +84,30 @@ export const THNView: React.FC<{truckHiringNote: TruckHiringNote, companyInfo: C
                     </thead>
                     <tbody>
                         <tr>
-                            <td className="border p-2">Total Freight</td>
+                            <td className="border p-2">Freight</td>
                             <td className="border p-2 text-right">{thn.freight.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                        </tr>
+                        {thn.fuelCharges && thn.fuelCharges > 0 && (
+                            <tr>
+                                <td className="border p-2">Fuel Charges</td>
+                                <td className="border p-2 text-right">{thn.fuelCharges.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                            </tr>
+                        )}
+                        {thn.tollCharges && thn.tollCharges > 0 && (
+                            <tr>
+                                <td className="border p-2">Toll Charges</td>
+                                <td className="border p-2 text-right">{thn.tollCharges.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                            </tr>
+                        )}
+                        {thn.otherCharges && thn.otherCharges > 0 && (
+                            <tr>
+                                <td className="border p-2">Other Charges</td>
+                                <td className="border p-2 text-right">{thn.otherCharges.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                            </tr>
+                        )}
+                        <tr className="font-bold bg-gray-100">
+                            <td className="border p-2">Total Charges</td>
+                            <td className="border p-2 text-right">{(thn.totalCharges || thn.freight).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                         </tr>
                          <tr>
                             <td className="border p-2">Advance Paid</td>
