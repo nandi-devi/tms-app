@@ -217,7 +217,8 @@ export const LorryReceiptForm: React.FC<LorryReceiptFormProps> = ({ onSave, onCa
         }
     }
     else {
-        setLr(prev => ({ ...prev, [name]: value }));
+        const isNumeric = type === 'number'; 
+        setLr(prev => ({ ...prev, [name]: isNumeric ? (parseFloat(value) || 0) : value }));
     }
   };
   
