@@ -1,18 +1,15 @@
-// A simple helper function to convert ArrayBuffer to hex string
-const bufferToHex = (buffer: ArrayBuffer): string => {
-  return [...new Uint8Array(buffer)]
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+import { api } from './utils';
+
+export const checkSetup = async (): Promise<{ isSetup: boolean }> => {
+    const response = await api.get('/auth/check-setup');
+    return response.data;
 };
 
-/**
- * Hashes a password using the Web Crypto API (SHA-256).
- * @param password The plain text password to hash.
- * @returns A promise that resolves to the hex-encoded hash string.
- */
-export const hashPassword = async (password: string): Promise<string> => {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  return bufferToHex(hashBuffer);
+export const setup = async (password: string): Promise<void> => {
+    await api.post('/auth/setup', { password });
+};
+
+export const login = async (password: string): Promise<{ token: string }> => {
+    const response = await api.post('/auth/login', { password });
+    return response.data;
 };

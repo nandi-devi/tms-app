@@ -1,48 +1,22 @@
-import { API_BASE_URL } from '../constants';
+import api from './api';
 import type { Customer } from '../types';
 
 
 export const getCustomers = async (): Promise<Customer[]> => {
-    const response = await fetch(`${API_BASE_URL}/customers`);
-    if (!response.ok) {
-        throw new Error('Failed to fetch customers');
-    }
-    return response.json();
+    const response = await api.get('/customers');
+    return response.data;
 };
 
 export const createCustomer = async (customer: Omit<Customer, 'id'>): Promise<Customer> => {
-    const response = await fetch(`${API_BASE_URL}/customers`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(customer),
-    });
-    if (!response.ok) {
-        throw new Error('Failed to create customer');
-    }
-    return response.json();
+    const response = await api.post('/customers', customer);
+    return response.data;
 };
 
 export const updateCustomer = async (id: string, customer: Partial<Customer>): Promise<Customer> => {
-    const response = await fetch(`${API_BASE_URL}/customers/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(customer),
-    });
-    if (!response.ok) {
-        throw new Error('Failed to update customer');
-    }
-    return response.json();
+    const response = await api.put(`/customers/${id}`, customer);
+    return response.data;
 };
 
 export const deleteCustomer = async (id: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/customers/${id}`, {
-        method: 'DELETE',
-    });
-    if (!response.ok) {
-        throw new Error('Failed to delete customer');
-    }
+    await api.delete(`/customers/${id}`);
 };

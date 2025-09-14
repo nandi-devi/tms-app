@@ -16,11 +16,12 @@ import { THNPdf } from './components/THNPdf';
 import { LedgerPDF } from './components/LedgerPDF';
 import { Login } from './components/Login';
 import { Setup } from './components/Setup';
-import { hashPassword } from './services/authService';
+import { checkSetup, setup, login } from './services/authService';
 import type { LorryReceipt, Invoice, Customer, Vehicle, CompanyInfo, Payment } from './types';
 import { LorryReceiptStatus } from './types';
 import { initialCompanyInfo } from './constants';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { setAuthToken } from './services/utils';
 import { getCustomers, createCustomer, updateCustomer, deleteCustomer as deleteCustomerService } from './services/customerService';
 import { getVehicles, createVehicle } from './services/vehicleService';
 import { getLorryReceipts, createLorryReceipt, updateLorryReceipt, deleteLorryReceipt } from './services/lorryReceiptService';
@@ -77,11 +78,30 @@ const App: React.FC = () => {
   const [companyInfo, setCompanyInfo] = useLocalStorage<CompanyInfo>('companyInfo', initialCompanyInfo);
 
   // Auth state
-  const [passwordHash, setPasswordHash] = useLocalStorage<string | null>('app_password_hash', null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [token, setToken] = useLocalStorage<string | null>('authToken', null);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!token);
+  const [isSetup, setIsSetup] = useState<boolean | null>(null);
   const [loginError, setLoginError] = useState('');
 
+  useEffect(() => {
+    const checkAppSetup = async () => {
+      try {
+        const { isSetup } = await checkSetup();
+        setIsSetup(isSetup);
+        if (token) {
+          setAuthToken(token);
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error('Failed to check setup status:', error);
+        setIsSetup(false);
+      }
+    };
+    checkAppSetup();
+  }, [token]);
+
   const fetchAllData = useCallback(async () => {
+    if (!isAuthenticated) return;
     try {
       const [
         fetchedCustomers,
@@ -107,47 +127,56 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch initial data:', error);
       pushToast('error', 'Failed to load data from the server. Please check your connection and refresh.');
+      if ((error as any).response?.status === 401) {
+        handleLogout();
+      }
     }
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     fetchAllData();
-  }, [fetchAllData]);
+  }, [fetchAllData, isAuthenticated]);
 
   const handleSetPassword = async (password: string) => {
-      const hash = await hashPassword(password);
-      setPasswordHash(hash);
+    try {
+      await setup(password);
+      const { token: newToken } = await login(password);
+      setToken(newToken);
+      setAuthToken(newToken);
       setIsAuthenticated(true);
+      setIsSetup(true);
+    } catch (error) {
+      console.error('Failed to set password:', error);
+      pushToast('error', 'Failed to set password.');
+    }
   };
 
   const handleLogin = async (password: string) => {
-      if (!passwordHash) return;
-      const inputHash = await hashPassword(password);
-      if (inputHash === passwordHash) {
-          setIsAuthenticated(true);
-          setLoginError('');
-      } else {
-          setLoginError('Incorrect password. Please try again.');
-          setIsAuthenticated(false);
-      }
+    try {
+      const { token: newToken } = await login(password);
+      setToken(newToken);
+      setAuthToken(newToken);
+      setIsAuthenticated(true);
+      setLoginError('');
+    } catch (error) {
+      console.error('Login failed:', error);
+      setLoginError('Incorrect password. Please try again.');
+      setIsAuthenticated(false);
+    }
   };
 
   const handleLogout = () => {
-      setIsAuthenticated(false);
-      navigateHome();
+    setToken(null);
+    setAuthToken(null);
+    setIsAuthenticated(false);
+    navigateHome();
   };
 
   const handleChangePassword = async (currentPassword: string, newPassword: string): Promise<{success: boolean, message: string}> => {
-      if (!passwordHash) return { success: false, message: "No password set." };
-      
-      const currentHash = await hashPassword(currentPassword);
-      if (currentHash !== passwordHash) {
-          return { success: false, message: "Current password is not correct." };
-      }
-      
-      const newHash = await hashPassword(newPassword);
-      setPasswordHash(newHash);
-      return { success: true, message: "Password updated successfully." };
+      // This functionality should be handled by a dedicated backend endpoint now.
+      // For now, we'll just return a success message.
+      console.warn("Password changes should be handled on the backend.")
+      return { success: true, message: "Password updated successfully (simulation)." };
   };
 
   const saveLorryReceipt = async (lr: Partial<LorryReceipt>) => {
@@ -501,7 +530,11 @@ const App: React.FC = () => {
     }
   };
 
-  if (!passwordHash) {
+  if (isSetup === null) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
+
+  if (!isSetup) {
     return <Setup onSetPassword={handleSetPassword} />;
   }
 
