@@ -2,21 +2,16 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/database';
+import authRoutes from './routes/authRoutes';
 import customerRoutes from './routes/customerRoutes';
-
 import vehicleRoutes from './routes/vehicleRoutes';
-
-
 import lorryReceiptRoutes from './routes/lorryReceiptRoutes';
-
-
 import invoiceRoutes from './routes/invoiceRoutes';
-
-
 import paymentRoutes from './routes/paymentRoutes';
 import dataRoutes from './routes/dataRoutes';
 import truckHiringNoteRoutes from './routes/truckHiringNoteRoutes';
 import transporterRoutes from './routes/transporterRoutes';
+import { protect } from './middleware/authMiddleware';
 
 
 dotenv.config();
@@ -43,15 +38,18 @@ app.get('/', (req: express.Request, res: express.Response) => {
   res.send('API is running...');
 });
 
-// Use Routes
-app.use('/api/customers', customerRoutes);
-app.use('/api/vehicles', vehicleRoutes);
-app.use('/api/lorryreceipts', lorryReceiptRoutes);
-app.use('/api/invoices', invoiceRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/data', dataRoutes);
-app.use('/api/truckhiringnotes', truckHiringNoteRoutes);
-app.use('/api/transporters', transporterRoutes);
+// Auth routes are public
+app.use('/api/auth', authRoutes);
+
+// Protected routes
+app.use('/api/customers', protect, customerRoutes);
+app.use('/api/vehicles', protect, vehicleRoutes);
+app.use('/api/lorryreceipts', protect, lorryReceiptRoutes);
+app.use('/api/invoices', protect, invoiceRoutes);
+app.use('/api/payments', protect, paymentRoutes);
+app.use('/api/data', protect, dataRoutes);
+app.use('/api/truckhiringnotes', protect, truckHiringNoteRoutes);
+app.use('/api/transporters', protect, transporterRoutes);
 
 const PORT = process.env.PORT || 5000;
 

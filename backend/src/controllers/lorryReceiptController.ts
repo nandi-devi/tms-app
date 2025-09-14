@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import LorryReceipt from '../models/lorryReceipt';
+import Invoice from '../models/invoice';
 import { getNextSequenceValue } from '../utils/sequence';
 import NumberingConfig from '../models/numbering';
 import { lrListQuerySchema, createLrSchema, updateLrSchema } from '../utils/validation';
@@ -140,8 +141,15 @@ export const updateLorryReceipt = async (req: Request, res: Response) => {
 
 export const deleteLorryReceipt = async (req: Request, res: Response) => {
     try {
-        // TODO: Check if this LR is part of an invoice before deleting
-        const lorryReceipt = await LorryReceipt.findByIdAndDelete(req.params.id);
+        const lrId = req.params.id;
+
+        // Check if this LR is part of an invoice
+        const invoice = await Invoice.findOne({ lorryReceipts: lrId });
+        if (invoice) {
+            return res.status(400).json({ message: `Cannot delete Lorry Receipt as it is part of Invoice #${invoice.invoiceNumber}.` });
+        }
+
+        const lorryReceipt = await LorryReceipt.findByIdAndDelete(lrId);
         if (lorryReceipt == null) {
             return res.status(404).json({ message: 'Cannot find lorry receipt' });
         }

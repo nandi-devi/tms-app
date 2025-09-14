@@ -1,59 +1,24 @@
-import { API_BASE_URL } from '../constants';
+import api from './api';
 import type { LorryReceipt } from '../types';
 
 
 export const getLorryReceipts = async (): Promise<LorryReceipt[]> => {
-    const response = await fetch(`${API_BASE_URL}/lorryreceipts`);
-    if (!response.ok) {
-        throw new Error('Failed to fetch lorry receipts');
-    }
-    return response.json();
+    const response = await api.get('/lorryreceipts');
+    return response.data;
 };
 
 export const createLorryReceipt = async (lorryReceipt: Omit<LorryReceipt, 'id' | '_id'>): Promise<LorryReceipt> => {
-    const response = await fetch(`${API_BASE_URL}/lorryreceipts`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(lorryReceipt),
-    });
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response' }));
-        console.error('Server validation error:', errorData);
-        const details = (errorData?.errors?.fieldErrors) ?
-          Object.entries(errorData.errors.fieldErrors)
-            .map(([k, v]) => `${k}: ${(v as string[]).join(', ')}`)
-            .join(' | ') : undefined;
-        const composed = [errorData?.message, details].filter(Boolean).join(' - ');
-        const err = new Error(`Failed to create lorry receipt: ${composed || 'Unknown server error'}`);
-        (err as any).fieldErrors = errorData?.errors?.fieldErrors;
-        throw err;
-    }
-    return response.json();
+    const response = await api.post('/lorryreceipts', lorryReceipt);
+    return response.data;
 };
 
 export const updateLorryReceipt = async (id: string, lorryReceipt: Partial<LorryReceipt>): Promise<LorryReceipt> => {
-    const response = await fetch(`${API_BASE_URL}/lorryreceipts/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(lorryReceipt),
-    });
-    if (!response.ok) {
-        throw new Error('Failed to update lorry receipt');
-    }
-    return response.json();
+    const response = await api.put(`/lorryreceipts/${id}`, lorryReceipt);
+    return response.data;
 };
 
 export const deleteLorryReceipt = async (id: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/lorryreceipts/${id}`, {
-        method: 'DELETE',
-    });
-    if (!response.ok) {
-        throw new Error('Failed to delete lorry receipt');
-    }
+    await api.delete(`/lorryreceipts/${id}`);
 };
 
 export const uploadPod = async (id: string, data: { receiverName: string; receiverPhone?: string; remarks?: string; photos?: File[]; latitude?: number; longitude?: number; recordedBy?: string; }): Promise<LorryReceipt> => {
@@ -66,13 +31,10 @@ export const uploadPod = async (id: string, data: { receiverName: string; receiv
     if (data.recordedBy) form.append('recordedBy', data.recordedBy);
     (data.photos || []).forEach(f => form.append('photos', f));
 
-    const response = await fetch(`${API_BASE_URL}/lorryreceipts/${id}/delivery`, {
-        method: 'POST',
-        body: form,
+    const response = await api.post(`/lorryreceipts/${id}/delivery`, form, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
     });
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Failed to upload POD: ${text}`);
-    }
-    return response.json();
+    return response.data;
 };

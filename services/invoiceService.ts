@@ -1,56 +1,22 @@
-import { API_BASE_URL } from '../constants';
+import api from './api';
 import type { Invoice } from '../types';
 
 
 export const getInvoices = async (): Promise<Invoice[]> => {
-    const response = await fetch(`${API_BASE_URL}/invoices`);
-    if (!response.ok) {
-        throw new Error('Failed to fetch invoices');
-    }
-    return response.json();
+    const response = await api.get('/invoices');
+    return response.data;
 };
 
 export const createInvoice = async (invoice: Omit<Invoice, 'id' | '_id'>): Promise<Invoice> => {
-    const response = await fetch(`${API_BASE_URL}/invoices`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(invoice),
-    });
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response' }));
-        const details = (errorData?.errors?.fieldErrors) ?
-          Object.entries(errorData.errors.fieldErrors)
-            .map(([k, v]) => `${k}: ${(v as string[]).join(', ')}`)
-            .join(' | ') : undefined;
-        const composed = [errorData?.message, details].filter(Boolean).join(' - ');
-        const err = new Error(composed || 'Failed to create invoice');
-        (err as any).fieldErrors = errorData?.errors?.fieldErrors;
-        throw err;
-    }
-    return response.json();
+    const response = await api.post('/invoices', invoice);
+    return response.data;
 };
 
 export const updateInvoice = async (id: string, invoice: Partial<Invoice>): Promise<Invoice> => {
-    const response = await fetch(`${API_BASE_URL}/invoices/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(invoice),
-    });
-    if (!response.ok) {
-        throw new Error('Failed to update invoice');
-    }
-    return response.json();
+    const response = await api.put(`/invoices/${id}`, invoice);
+    return response.data;
 };
 
 export const deleteInvoice = async (id: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/invoices/${id}`, {
-        method: 'DELETE',
-    });
-    if (!response.ok) {
-        throw new Error('Failed to delete invoice');
-    }
+    await api.delete(`/invoices/${id}`);
 };
