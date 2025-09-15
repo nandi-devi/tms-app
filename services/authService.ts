@@ -1,4 +1,12 @@
-import { api } from './utils';
+import api from './api';
+
+export const setAuthToken = (token: string | null) => {
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common['Authorization'];
+  }
+};
 
 export const checkSetup = async (): Promise<{ isSetup: boolean }> => {
     const response = await api.get('/auth/check-setup');

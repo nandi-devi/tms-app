@@ -4,6 +4,107 @@ import type { LorryReceipt, CompanyInfo } from '../types';
 import { LorryReceiptDocument } from './LorryReceiptDocument';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
+import { formatDate, numberToWords } from '../services/utils';
+
+interface LorryReceiptViewProps {
+  lorryReceipt: LorryReceipt;
+  companyInfo: CompanyInfo;
+}
+
+export const LorryReceiptView: React.FC<LorryReceiptViewProps> = ({ lorryReceipt, companyInfo }) => {
+  const { consignor, consignee, vehicle } = lorryReceipt;
+
+  // Using inline styles for simplicity, but could be moved to a CSS file or a style object
+  return (
+    <div className="bg-white p-8 text-xs font-sans shadow-lg" style={{ width: '210mm', minHeight: '297mm' }}>
+      <div className="flex justify-between items-start mb-5 pb-2 border-b-2 border-black">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">{companyInfo.name}</h1>
+          <p className="text-gray-600">{companyInfo.address}</p>
+        </div>
+        <div className="text-right">
+          <h2 className="text-lg font-bold text-orange-600">PREVIEW COPY</h2>
+          <p><span className="font-bold">LR No:</span> {lorryReceipt.lrNumber}</p>
+          <p><span className="font-bold">Date:</span> {formatDate(lorryReceipt.date)}</p>
+        </div>
+      </div>
+
+      <div className="flex justify-between mb-4">
+        <div className="border border-gray-300 rounded p-3 w-[48%]">
+          <h3 className="text-sm font-bold mb-2">Consignor</h3>
+          <p>{consignor?.name}</p>
+          <p className="text-gray-600">{consignor?.address}</p>
+          <p><span className="font-bold">GSTIN:</span> {consignor?.gstin}</p>
+        </div>
+        <div className="border border-gray-300 rounded p-3 w-[48%]">
+          <h3 className="text-sm font-bold mb-2">Consignee</h3>
+          <p>{consignee?.name}</p>
+          <p className="text-gray-600">{consignee?.address}</p>
+          <p><span className="font-bold">GSTIN:</span> {consignee?.gstin}</p>
+        </div>
+      </div>
+
+      <div className="border border-gray-300 rounded p-3 flex justify-between mb-4">
+        <p><span className="font-bold">From:</span> {lorryReceipt.from}</p>
+        <p><span className="font-bold">To:</span> {lorryReceipt.to}</p>
+        <p><span className="font-bold">Vehicle No:</span> {vehicle?.number}</p>
+      </div>
+
+      <div className="mb-4">
+        <h3 className="text-sm font-bold mb-2">Packages</h3>
+        <table className="w-full text-left border-collapse border border-gray-300">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-2 border-r">Count</th>
+              <th className="p-2 border-r">Packing</th>
+              <th className="p-2 border-r">Description</th>
+              <th className="p-2">Weight (Act/Chg)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lorryReceipt.packages.map((pkg, i) => (
+              <tr key={i} className="border-t">
+                <td className="p-2 border-r">{pkg.count}</td>
+                <td className="p-2 border-r">{pkg.packingMethod}</td>
+                <td className="p-2 border-r">{pkg.description}</td>
+                <td className="p-2">{pkg.actualWeight} / {pkg.chargedWeight}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="flex justify-between">
+        <div className="border border-gray-300 rounded p-3 w-[55%]">
+            <p><span className="font-bold">E-Way Bill No:</span> {lorryReceipt.eWayBillNo}</p>
+            <p><span className="font-bold">Value of Goods:</span> ₹{lorryReceipt.valueGoods.toLocaleString('en-IN')}</p>
+            {lorryReceipt.valueGoods > 0 && <p className="text-xs italic">({numberToWords(lorryReceipt.valueGoods)} Rupees Only)</p>}
+        </div>
+        <div className="border border-gray-300 rounded p-3 w-[40%]">
+            <h3 className="text-sm font-bold mb-2">Charges</h3>
+            <div className="flex justify-between"><p>Freight:</p><p>₹{lorryReceipt.charges.freight.toFixed(2)}</p></div>
+            <div className="flex justify-between"><p>Other Charges:</p><p>₹{(lorryReceipt.totalAmount - lorryReceipt.charges.freight).toFixed(2)}</p></div>
+            <div className="flex justify-between border-t mt-1 pt-1">
+                <p className="font-bold">Total:</p>
+                <p className="font-bold">₹{lorryReceipt.totalAmount.toFixed(2)}</p>
+            </div>
+        </div>
+      </div>
+
+      <div className="flex justify-between mt-20 pt-5 border-t text-xs">
+        <div>
+            <p className="mb-10">Receiver's Signature</p>
+            <p>_________________________</p>
+        </div>
+        <div className="text-right">
+            <p className="mb-10">For {companyInfo.name}</p>
+            <p>_________________________</p>
+            <p>Authorised Signatory</p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface LorryReceiptPDFProps {
   lorryReceipt: LorryReceipt;
