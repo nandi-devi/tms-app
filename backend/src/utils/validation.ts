@@ -25,6 +25,7 @@ export const createInvoiceSchema = z.object({
   customerId: z.string().min(1),
   lorryReceipts: z.array(z.object({ _id: z.string().min(1) })).min(1),
   date: z.string().min(1),
+  invoiceNumber: z.number().int().positive().optional(),
   totalAmount: z.number().nonnegative(),
   gstType: z.string(),
   cgstRate: z.number().nonnegative(),
@@ -48,6 +49,7 @@ export const createLrSchema = z.object({
   vehicleId: z.string().min(1),
   from: z.string().min(1),
   to: z.string().min(1),
+  lrNumber: z.number().int().positive().optional(),
   packages: z.array(z.object({
     count: z.number().positive(),
     packingMethod: z.string().min(1),

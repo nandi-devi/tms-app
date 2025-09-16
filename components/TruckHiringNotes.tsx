@@ -8,11 +8,12 @@ import { TruckHiringNoteForm } from './TruckHiringNoteForm';
 import { THNPaymentForm } from './THNPaymentForm';
 import { THNPaymentHistoryModal } from './THNPaymentHistoryModal';
 import { formatDate } from '../services/utils';
+import { getTruckHiringNotes, sendReminder } from '../services/truckHiringNoteService';
 import type { View } from '../App';
 
 interface TruckHiringNotesProps {
     notes: TruckHiringNote[];
-    onSave: (note: Partial<Omit<TruckHiringNote, '_id' | 'thnNumber' | 'balancePayable'>>) => Promise<any>;
+    onSave: (note: Partial<Omit<TruckHiringNote, '_id' | 'thnNumber' | 'balancePayable' | 'totalCharges'>>) => Promise<any>;
     onSavePayment: (payment: Omit<Payment, '_id' | 'customer' | 'invoice' | 'truckHiringNote'>) => Promise<void>;
     onViewChange: (view: View) => void;
     onBack: () => void;
@@ -24,6 +25,10 @@ interface THNTableFilters {
     startDate: string;
     endDate: string;
     showOnlyOutstanding: boolean;
+    status: string;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
+    filter: 'thisWeek' | 'thisMonth' | 'outstanding' | 'all';
 }
 
 export const TruckHiringNotes: React.FC<TruckHiringNotesProps> = ({ notes, onSave, onSavePayment, onViewChange, onBack, initialFilters }) => {
@@ -38,6 +43,11 @@ export const TruckHiringNotes: React.FC<TruckHiringNotesProps> = ({ notes, onSav
     const [startDate, setStartDate] = useState(initialFilters?.startDate || '');
     const [endDate, setEndDate] = useState(initialFilters?.endDate || '');
     const [showOnlyOutstanding, setShowOnlyOutstanding] = useState(initialFilters?.showOnlyOutstanding || false);
+    const [status, setStatus] = useState(initialFilters?.status || '');
+    const [sortBy, setSortBy] = useState(initialFilters?.sortBy || 'thnNumber');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(initialFilters?.sortOrder || 'desc');
+    const [filter, setFilter] = useState<'thisWeek' | 'thisMonth' | 'outstanding' | 'all'>(initialFilters?.filter || 'all');
+    const [isLoading, setIsLoading] = useState(false);
 
     const filteredNotes = useMemo(() => {
         return notes
@@ -63,7 +73,7 @@ export const TruckHiringNotes: React.FC<TruckHiringNotesProps> = ({ notes, onSav
             .sort((a, b) => b.thnNumber - a.thnNumber);
     }, [notes, searchTerm, startDate, endDate, showOnlyOutstanding]);
 
-    const handleSave = async (note: Partial<Omit<TruckHiringNote, '_id' | 'thnNumber' | 'balancePayable'>>) => {
+    const handleSave = async (note: Partial<Omit<TruckHiringNote, '_id' | 'thnNumber' | 'balancePayable' | 'totalCharges'>>) => {
         await onSave(note);
         setIsFormOpen(false);
         setEditingNote(undefined);
@@ -87,6 +97,71 @@ export const TruckHiringNotes: React.FC<TruckHiringNotesProps> = ({ notes, onSav
     const handleOpenHistoryModal = (note: TruckHiringNote) => {
         setSelectedNoteForHistory(note);
         setIsHistoryModalOpen(true);
+    };
+
+    const handleSendReminder = async (note: TruckHiringNote) => {
+        try {
+            await sendReminder(note._id);
+            alert('Reminder sent successfully!');
+        } catch (error) {
+            console.error('Failed to send reminder:', error);
+            alert('Failed to send reminder. Please try again.');
+        }
+    };
+
+    const handleBulkExport = async () => {
+        try {
+            setIsLoading(true);
+            const filters = {
+                status: status || undefined,
+                sortBy: sortBy || undefined,
+                sortOrder: sortOrder || undefined,
+                filter: filter !== 'all' ? filter : undefined,
+            };
+            
+            const data = await getTruckHiringNotes(filters);
+            
+            // Export to CSV
+            const csvContent = [
+                ['THN No', 'Date', 'Transporter', 'Truck No', 'From', 'To', 'Freight', 'Total Charges', 'Advance', 'Balance', 'Status'],
+                ...data.map(note => [
+                    note.thnNumber,
+                    note.date,
+                    note.truckOwnerName,
+                    note.truckNumber,
+                    note.origin,
+                    note.destination,
+                    note.freight,
+                    note.totalCharges,
+                    note.advancePaid,
+                    note.balancePayable,
+                    note.status
+                ])
+            ].map(row => row.join(',')).join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `thn-export-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Failed to export:', error);
+            alert('Failed to export data. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const getStatusBadge = (status: string, balancePayable: number) => {
+        if (balancePayable <= 0) {
+            return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Paid</span>;
+        } else if (balancePayable < 1000) {
+            return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Partially Paid</span>;
+        } else {
+            return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Outstanding</span>;
+        }
     };
 
     return (
@@ -113,23 +188,69 @@ export const TruckHiringNotes: React.FC<TruckHiringNotesProps> = ({ notes, onSav
             )}
             <div className="flex justify-between items-center">
                 <h2 className="text-3xl font-bold text-gray-800">Truck Hiring Notes</h2>
-                <div>
-                    <Button onClick={handleAddNew} className="mr-4">Add New THN</Button>
+                <div className="flex space-x-2">
+                    <Button onClick={handleBulkExport} disabled={isLoading} variant="secondary">
+                        {isLoading ? 'Exporting...' : 'Export CSV'}
+                    </Button>
+                    <Button onClick={handleAddNew}>Add New THN</Button>
                     <Button variant="secondary" onClick={onBack}>Back</Button>
                 </div>
             </div>
 
-            <Card title="Filters">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card title="Filters & Sorting">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <Input
                         type="text"
                         label="Search by THN No, Owner, Truck No, etc..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        wrapperClassName="md:col-span-3"
+                        wrapperClassName="md:col-span-2"
+                    />
+                    <Select
+                        label="Quick Filter"
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value as any)}
+                        options={[
+                            { value: 'all', label: 'All' },
+                            { value: 'thisWeek', label: 'This Week' },
+                            { value: 'thisMonth', label: 'This Month' },
+                            { value: 'outstanding', label: 'Outstanding Only' }
+                        ]}
+                    />
+                    <Select
+                        label="Status"
+                        value={status}
+                        onChange={(e) => setStatus(e.target.value)}
+                        options={[
+                            { value: '', label: 'All Status' },
+                            { value: 'Paid', label: 'Paid' },
+                            { value: 'Partially Paid', label: 'Partially Paid' },
+                            { value: 'Unpaid', label: 'Unpaid' }
+                        ]}
                     />
                     <Input label="Start Date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
                     <Input label="End Date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                    <Select
+                        label="Sort By"
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        options={[
+                            { value: 'thnNumber', label: 'THN Number' },
+                            { value: 'date', label: 'Date' },
+                            { value: 'truckOwnerName', label: 'Transporter' },
+                            { value: 'freight', label: 'Freight' },
+                            { value: 'balancePayable', label: 'Balance' }
+                        ]}
+                    />
+                    <Select
+                        label="Sort Order"
+                        value={sortOrder}
+                        onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                        options={[
+                            { value: 'desc', label: 'Descending' },
+                            { value: 'asc', label: 'Ascending' }
+                        ]}
+                    />
                     <div className="flex items-center pt-6">
                         <input
                             id="outstanding-checkbox"
@@ -152,11 +273,12 @@ export const TruckHiringNotes: React.FC<TruckHiringNotesProps> = ({ notes, onSav
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">THN No.</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Truck Owner</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transporter</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Truck No.</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">From / To</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Freight</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Charges</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -168,9 +290,15 @@ export const TruckHiringNotes: React.FC<TruckHiringNotesProps> = ({ notes, onSav
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{note.truckOwnerName}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{note.truckNumber}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{note.origin} to {note.destination}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">₹{note.freight.toLocaleString('en-IN')}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">₹{note.totalCharges?.toLocaleString('en-IN') || note.freight.toLocaleString('en-IN')}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-600 text-right">₹{note.balancePayable.toLocaleString('en-IN')}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                        {getStatusBadge(note.status, note.balancePayable)}
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                        {note.balancePayable > 0 && (
+                                            <button onClick={() => handleSendReminder(note)} className="text-orange-600 hover:text-orange-900 transition-colors">Remind</button>
+                                        )}
                                         {note.status !== 'Paid' && (
                                             <button onClick={() => handleOpenPaymentForm(note)} className="text-blue-600 hover:text-blue-900 transition-colors">Add Payment</button>
                                         )}
@@ -182,7 +310,7 @@ export const TruckHiringNotes: React.FC<TruckHiringNotesProps> = ({ notes, onSav
                             ))}
                             {filteredNotes.length === 0 && (
                                 <tr>
-                                    <td colSpan={8} className="text-center py-8 text-gray-500">No Truck Hiring Notes found.</td>
+                                    <td colSpan={9} className="text-center py-8 text-gray-500">No Truck Hiring Notes found.</td>
                                 </tr>
                             )}
                         </tbody>

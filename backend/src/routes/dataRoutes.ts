@@ -1,7 +1,7 @@
 import express from 'express';
 import { resetData, backupData, restoreData } from '../controllers/dataController';
-import expressAsyncHandler from 'express-async-handler';
 import NumberingConfig from '../models/numbering';
+import type { Request, Response } from 'express';
 
 const router = express.Router();
 
@@ -18,13 +18,13 @@ router.get('/backup', backupData);
 router.post('/restore', restoreData);
 
 // Numbering config endpoints
-router.get('/numbering', expressAsyncHandler(async (req, res) => {
+router.get('/numbering', async (req: Request, res: Response) => {
   const items = await NumberingConfig.find({});
   res.json(items);
-}));
+});
 
-router.post('/numbering', expressAsyncHandler(async (req, res) => {
-  const { key, start, end, allowOutsideRange } = req.body;
+router.post('/numbering', async (req: Request, res: Response) => {
+  const { key, start, end, allowOutsideRange } = req.body as any;
   if (!key || typeof start !== 'number' || typeof end !== 'number' || start > end) {
     return res.status(400).json({ message: 'Invalid numbering configuration payload' });
   }
@@ -40,6 +40,6 @@ router.post('/numbering', expressAsyncHandler(async (req, res) => {
   }
   const created = await NumberingConfig.create({ _id: key, start, end, next: start, allowOutsideRange: !!allowOutsideRange });
   res.status(201).json(created);
-}));
+});
 
 export default router;

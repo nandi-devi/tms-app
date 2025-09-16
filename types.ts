@@ -159,24 +159,54 @@ export interface Payment {
     notes?: string;
 }
 
+export interface Transporter {
+  _id: string;
+  name: string;
+  phone?: string;
+  address?: string;
+  gstin?: string;
+  pan?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface TruckHiringNote {
   _id: string;
   thnNumber: number;
   date: string;
-  truckOwnerName: string;
+  transporterId?: string;
+  truckOwnerName: string; // transporter name (for backward compatibility)
+  transporterPhone?: string;
+  transporterAddress?: string;
+  transporterGstin?: string;
+  transporterPan?: string;
   truckNumber: string;
-  driverName: string;
-  driverLicense: string;
   origin: string;
   destination: string;
   goodsType: string;
   weight: number;
+  loadingDate?: string;
+  loadingTime?: string;
+  unloadingDate?: string;
+  unloadingTime?: string;
+  podImages?: string[];
   freight: number;
+  fuelCharges?: number;
+  tollCharges?: number;
+  otherCharges?: number;
+  totalCharges: number;
   advancePaid: number;
   balancePayable: number;
   expectedDeliveryDate: string;
+  paymentTerms?: 'Cash' | 'Cheque' | 'NEFT' | 'UPI';
+  paymentReference?: string;
   specialInstructions?: string;
   status: THNStatus;
   paidAmount: number;
   payments: Payment[];
+  isDraft: boolean;
+  lastReminderDate?: string;
+  createdAt: string;
+  updatedAt: string;
 }
